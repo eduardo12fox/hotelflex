@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"
+        "http://struts.apache.org/dtds/struts-2.0.dtd">
+
+<struts>
+<!-- Estas são as actions para uso como Flex -->
+    <package name="flex" namespace="/flex" extends="tiles-default">
+		<action name="fquartoreserva" class="br.com.ebercom.hotel.actions.QuartoReservaAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="input" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>			
+		</action>  
+
+		<action name="freserva" class="br.com.ebercom.hotel.actions.ReservaAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="input" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>			
+		</action>    
+    
+		<action name="flogin" class="br.com.ebercom.hotel.actions.LoginAction">
+			<result name="valid" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="invalid" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+		</action>
+	
+		<action name="fusuario" class="br.com.ebercom.hotel.actions.UsuarioAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="input" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>			
+		</action>
+		
+		<action name="fcliente" class="br.com.ebercom.hotel.actions.ClienteAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>	
+				<param name="contentType">${contentType}</param>  
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>	
+				<param name="contentType">${contentType}</param>  
+				<param name="contentLength">${contentLength}</param>
+			</result>
+		</action>	
+		<action name="ftipoquarto" class="br.com.ebercom.hotel.actions.TipoQuartoAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>  
+				<param name="contentLength">${contentLength}</param>
+			</result>
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>
+		</action>
+		<action name="fquarto" class="br.com.ebercom.hotel.actions.QuartoAction">
+			<result name="success" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>  
+				<param name="contentLength">${contentLength}</param>
+			</result>		
+			<result name="saveOk" type="stream">
+				<param name="inputName">myStream</param>
+				<param name="contentType">${contentType}</param>
+				<param name="contentLength">${contentLength}</param>
+			</result>				
+		</action>	
+    </package>
+</struts>

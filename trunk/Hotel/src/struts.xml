@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"
+    "http://struts.apache.org/dtds/struts-2.0.dtd">
+
+<struts>
+    <constant name="struts.enable.DynamicMethodInvocation" value="true" />
+    <constant name="struts.devMode" value="false" />
+	<include file="struts-default.xml"></include>
+	
+	<!-- Incluindo mapeamento para as actions Flex -->
+	<include file="flex.xml"/> 
+	
+	<package name="default" extends="tiles-default">
+		<action name="login!*" method="{1}" class="br.com.ebercom.hotel.actions.LoginAction">
+			<result name="invalid" type="tiles">welcome.page</result>
+			<result name="valid" type="tiles">home.page</result>
+		</action>
+		
+		<action name="quarto!*" class="br.com.ebercom.hotel.actions.QuartoAction" method="list">
+			<result name="list" type="tiles">quartos.list</result>
+			<result name="saveOk" type="tiles">quartos.list</result>
+			<result name="success" type="tiles">quartos.list</result>
+			<result name="include" type="tiles">quartos.form</result>
+			<result name="input" type="tiles">quartos.form</result>
+		</action>
+		
+		<action name="tipoquarto!*" class="br.com.ebercom.hotel.actions.TipoQuartoAction" method="list">
+			<result name="list" type="tiles">tipoquartos.list</result>
+			<result name="saveOk" type="tiles">tipoquartos.list</result>
+			<result name="success" type="tiles">tipoquartos.list</result>
+			<result name="include" type="tiles">tipoquartos.form</result>
+			<result name="input" type="tiles">tipoquartos.form</result>
+		</action>
+		
+		<action name="cliente!*" class="br.com.ebercom.hotel.actions.ClienteAction" method="list">
+			<result name="list" type="tiles">clientes.list</result>
+			<result name="include" type="tiles">clientes.form</result>
+			<result name="input" type="tiles">clientes.form</result>
+			<result name="success" type="tiles">clientes.list</result>
+			<result name="saveOk" type="tiles">clientes.list</result>
+		</action>
+	</package>
+</struts>
