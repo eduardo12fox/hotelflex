@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" title="Nova Reserva" height="430" width="522">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ValidationResultEvent;
+			import mx.validators.Validator;
+			import mx.rpc.events.ResultEvent;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import components.pclientes;
+			import components.clientes;
+			import components.pquartos;
+			import mx.effects.easing.Bounce;
+			import mx.effects.Move;	
+			import mx.core.Application;	
+			import mx.controls.Alert;
+			
+			public static const Ok : String = "teste";
+			
+			public static const millisecondsPerDay:int = 1000 * 60 * 60 * 24;
+			
+			var antes : Array = [{rangeStart: new Date(25,1,2006), rangeEnd: new Date(new Date().getTime() - (millisecondsPerDay))}];
+			
+			[Bindable]
+			var dpGrid : Object;
+			
+			
+			public function abrirCli():void{
+				var cliente : clientes = clientes(PopUpManager.createPopUp(this, components.clientes , true));
+				PopUpManager.centerPopUp(cliente);
+				popUpEffect.target=cliente;
+				popUpEffect.play();
+			}
+			
+			public function abrePcli():void{
+				var pesqcli : pclientes = pclientes(PopUpManager.createPopUp(this, components.pclientes , true));
+				PopUpManager.centerPopUp(pesqcli);
+				pesqcli.sFlag = "1";
+				popUpEffect.target = pesqcli;
+				popUpEffect.play();
+			}
+			
+			public function abrePqua():void{
+				var pesqqua : pquartos = pquartos(PopUpManager.createPopUp(this, components.pquartos , true));
+				PopUpManager.centerPopUp(pesqqua);
+				popUpEffect.target = pesqqua;
+				popUpEffect.play();
+			}			
+			
+			public function init():void{
+				Application.application.rCodCli = "";
+				Application.application.rNomCli = "";
+				Application.application.rCodQua = "";
+				Application.application.rNomQua = "";				
+				codcli.setFocus();
+			}
+			
+			public function pesquisar( event:KeyboardEvent ):void{
+				if ((codcli.text == "") && (event.keyCode == 13 )){
+					abrePcli();
+				}
+			}
+
+			public function pesquisarq( event:KeyboardEvent ):void{
+				if ((codQuarto.text == "") && (event.keyCode == 13 )){
+					abrePqua();
+				}
+			}
+			
+			public function getParametersSaveReserva():Object{
+				return {
+					"reserva.codigo"    : codigo.text,
+					"reserva.dtreserva" : dtReserva.text,
+					"reserva.cliente"   : codcli.text,
+					"reserva.dtprevent" : dtEnt.text,
+					"reserva.dtprevsai" : dtSai.text,
+					"reserva.flag"      : "R"
+				}
+			}
+			
+			public function salvar():void{
+				abreReserva.send( getParametersSaveReserva() );
+			}
+			
+			public function resultSaveReserva(event : ResultEvent):void{
+				getLast.send();
+			}
+			
+			public function incluirQuartos():void{
+				if (validaReserva())
+					salvar();
+			}
+			
+			public function resultGetLast(event:ResultEvent):void{
+				codigo.text = String (event.result);
+				pnlQuartos.enabled = true;
+				btnIncluiQuartos.enabled = false;
+				codQuarto.setFocus();
+			}
+			
+			public function listarQuartos():void{
+				listQuartos.send( this.getParameters() );
+			}
+			
+			public function getParameters():Object{
+				return {
+					"reserva" : codigo.text
+				}
+			}
+				
+			public function hrdpGrid(event:ResultEvent):void{
+				try{
+					dpGrid = event.result.list.QuartoReserva;
+				} catch ( e : Error ){
+					dpGrid = null;
+					//Alert.show("Erro!");
+				}
+			}					
+			
+			public function getParametersAddQuarto():Object{
+				return {
+					"quartoReserva.reserva" : codigo.text,
+					"quartoReserva.quarto"  : codQuarto.text,
+					"quartoReserva.valor"   : valorQuarto.text
+				}
+			}
+			
+			public function incluiQuarto():void{
+				if (validaQuarto())
+					addQuarto.send( getParametersAddQuarto() );
+			}
+			
+			public function ResultAddQuarto(event:ResultEvent):void{
+				//Alert.show( String (event.result) );
+				listarQuartos();
+				codQuarto.text = "";
+				quarto.text = "";
+				valorQuarto.text = "";
+			}			
+			
+			public function sair():void{
+				Alert.show("Cancelar Reserva?","Cancelar",Alert.YES|Alert.NO,this, cancelar);	
+			}
+			
+			public function cancelar(event:CloseEvent):void{
+				if (event.detail==Alert.YES)
+					if (codigo.text=="") {
+						PopUpManager.removePopUp(this);
+					} else {
+						abortarReserva();
+					}
+			}
+			
+			public function salvarSair():void{
+				if ((codigo.text=="") || (dgQuartos.dataProvider.length==0)){
+					Alert.show("Reserva incompleta. Verifique!");
+				} else {
+					Alert.show("Confirmar Reserva?","Confirmar",Alert.YES|Alert.NO,this, saveExit);						
+				}
+			}
+			
+			public function saveExit(event:CloseEvent):void{
+				if (event.detail==Alert.YES)
+				    dispatchEvent(new Event(novaReserva.Ok));
+					PopUpManager.removePopUp(this);
+			}			
+			
+			public function eliminarQuarto():void{
+				if (dgQuartos.dataProvider.length==0){
+					Alert.show("Reserva sem quartos para serem eliminados. Verifique!");
+				} else if(dgQuartos.selectedIndex==-1){
+					Alert.show("Selecione um quarto para ser eliminado.");
+				} else {
+					removeQuarto.send( getParametersRemoveQuarto() );
+				}
+			}
+			
+			public function getParametersRemoveQuarto():Object{
+				return {
+					"reserva" : codigo.text,
+					"quarto"  : dgQuartos.selectedItem.quarto
+				}
+			}
+			
+			public function ResultRemoveQuarto(event:ResultEvent):void{
+				Alert.show( String (event.result));
+				listarQuartos();
+			}
+			
+			public function abortarReserva():void{
+				abortaReserva.send( getParametersAbortaReserva() );
+			}
+			
+			public function getParametersAbortaReserva():Object{
+				return {
+					"codigo" : codigo.text
+				}
+			}
+			
+			public function resultAbortaReserva(event:ResultEvent):void{
+				Alert.show( String ( event.result ) );
+				dispatchEvent(new Event(novaReserva.Ok));
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function validaReserva():Boolean{
+				var valido : Boolean;
+				for each ( var v:Validator in validadoresReserva ){
+					var resultEvent : ValidationResultEvent = v.validate();
+					if ( resultEvent.type != ValidationResultEvent.VALID ) {
+						valido = false;
+						break;
+					} else {
+						valido = true;
+					}
+				}
+				return valido;
+			}
+			
+			public function validaQuarto():Boolean{
+				var valido : Boolean;
+				for each ( var v:Validator in validadoresQuarto ){
+					var resultEvent : ValidationResultEvent = v.validate();
+					if ( resultEvent.type != ValidationResultEvent.VALID ){
+						valido = false;
+						break;
+					} else {
+						valido = true;
+					}
+				}
+				return valido;
+			}
+			
+			private function format():void {
+	  			var valt:String = "";
+	  			var i : int;
+	  			for ( i = 0; i<valorQuarto.length; i++ ){
+	  				if (valorQuarto.text.charAt(i)==",")
+	  			    	valt = valt + ".";
+	  				else
+	  					valt = valt + valorQuarto.text.charAt(i);
+	  			}
+	            var temp:Number=Number(valt); 
+	            valorQuarto.text = String (temp);
+  			}
+		]]>
+	</mx:Script>
+	
+	<mx:HTTPService
+		id="removeQuarto"
+		url="http://{Application.application.Servidor}/hotel/flex/fquartoreserva!remove.action"
+		result="ResultRemoveQuarto(event)"
+		method="POST"
+	/>	
+
+	<mx:HTTPService
+		id="addQuarto"
+		url="http://{Application.application.Servidor}/hotel/flex/fquartoreserva!include.action"
+		result="ResultAddQuarto(event)"
+		method="POST"
+	/>	
+	
+	<mx:HTTPService
+		id="listQuartos"
+		url="http://{Application.application.Servidor}/hotel/flex/fquartoreserva!list.action"
+		result="hrdpGrid(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="abortaReserva"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!remove.action"
+		result="resultAbortaReserva(event)"
+		method="POST"
+	/>	
+	
+	<mx:HTTPService
+		id="abreReserva"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!save.action"
+		result="resultSaveReserva(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="getLast"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!getLastCod.action"
+		result="resultGetLast(event)"
+		method="POST"
+	/>
+	
+	<mx:Array id="validadoresReserva">
+		<mx:DateValidator source="{dtReserva}" required="true" inputFormat="DD/MM/YY" property="text"
+			invalidCharError="Caracteres inválidos na data."
+			formatError="Formato inválido."
+			requiredFieldError="Data da Reserva não pode ser nula."
+		/>
+		<mx:StringValidator source="{codcli}" property="text" required="true"
+			requiredFieldError="Selecione um cliente clicando na imagem de pesquisa."
+		/>
+		<mx:DateValidator source="{dtEnt}" required="true" inputFormat="DD/MM/YY" property="text"
+			invalidCharError="Caracteres inválidos na data."
+			formatError="Formato inválido."
+			requiredFieldError="Data do início da Reserva não pode ser nula."
+		/>
+		<mx:DateValidator source="{dtSai}" required="true" inputFormat="DD/MM/YY" property="text"
+			invalidCharError="Caracteres inválidos na data."
+			formatError="Formato inválido."
+			requiredFieldError="Data do fim da Reserva não pode ser nula."
+		/>				
+	</mx:Array>
+	
+	<mx:Array id="validadoresQuarto">
+		<mx:StringValidator source="{codQuarto}" property="text" required="true"
+			requiredFieldError="Selecione um quarto clicando na imagem de pesquisa."
+		/>
+		<mx:CurrencyValidator source="{valorQuarto}" allowNegative="false" required="true" property="text"
+			minValue="0.01"
+			precision="2"
+			decimalSeparator="."
+			thousandsSeparator=","
+			lowerThanMinError="Defina um valor para locação do quarto."
+			precisionError="No máximo 2 casas decimais."
+			requiredFieldError="Defina um valor para locação do quarto."
+			negativeError="Valor não pode ser negativo."
+		/>
+	</mx:Array>
+	
+	<mx:Parallel id="popUpEffect">
+	<mx:Fade alphaFrom="0" alphaTo="1"/>
+	<mx:WipeDown moveEasingFunction="Bounce.easeOut" duration="900"/>
+	</mx:Parallel>	
+	
+	<mx:Panel id="pnlQuartos" x="0" y="96" layout="absolute" title="Quartos" width="100%" height="100%" enabled="false">
+		<mx:Label x="10" y="10" text="Quarto"/>
+		<mx:DataGrid id="dgQuartos" dataProvider="{dpGrid}" x="0" y="38" height="100%" width="100%" tabIndex="8">
+			<mx:columns>
+				<mx:DataGridColumn headerText="  " width="20"/>
+				<mx:DataGridColumn headerText="Código" dataField="quarto" width="50"/>
+				<mx:DataGridColumn headerText="Descrição" dataField="descricao"/>
+				<mx:DataGridColumn headerText="Valor" dataField="valor" width="100"/>
+			</mx:columns>
+		</mx:DataGrid>
+		<mx:TextInput x="61" y="8" width="36" id="codQuarto" text="{Application.application.rCodQua}" keyDown="{pesquisarq( event )}" 
+				toolTip="Clique na imagem ao lado para pesquisar" editable="false"/>
+		<mx:Image x="101" y="8" source="images/find.png" id="btnPesqQuarto" buttonMode="true" click="{abrePqua()}" tabIndex="5"/>
+		<mx:TextInput x="129" y="8" width="183" id="quarto" tabEnabled="false" editable="false" text="{Application.application.rNomQua}"/>
+		<mx:Button icon="@Embed('../images/add.png')" x="428" y="6" id="btnAddQuarto" tabIndex="7" click="{incluiQuarto()}"/>
+		<mx:TextInput x="361" y="8" width="59" id="valorQuarto" tabIndex="6" focusOut="format()"/>
+		<mx:Label x="320" y="12" text="Valor"/>
+		<mx:ControlBar height="100%" y="181" width="100%">
+			<mx:Button label="Eliminar" icon="@Embed('../images/menos.png')" tabIndex="10" click="eliminarQuarto()"/>
+		</mx:ControlBar>
+	</mx:Panel>
+	<mx:Label x="10" y="40" text="Cliente"/>
+	<mx:Label x="10" y="70" text="Periodo de Estadia"/>
+	<mx:Image x="106" y="38" source="images/find.png" click="{abrePcli()}" buttonMode="true" id="btnPesqCli" tabEnabled="true" tabIndex="1"/>
+	<mx:TextInput x="62" y="38" width="36" id="codcli" text="{Application.application.rCodCli}" 
+		keyDown="{pesquisar(event)}" editable="false" toolTip="Clique na imagem ao lado para pesquisar"/>
+	<mx:Label x="10" y="10" text="Código da Reserva"/>
+	<mx:TextInput x="132" y="8" width="77" id="codigo" editable="false" tabEnabled="false"/>
+	<mx:TextInput x="132" y="38" width="360" id="cliente" text="{Application.application.rNomCli}" editable="false" tabEnabled="false"/>
+	<mx:DateFormatter id="df" formatString="DD/MM/YY"/>
+	<mx:DateField x="132" y="68" editable="true"
+		formatString="DD/MM/YY"
+		disabledRanges="{antes}"
+		dayNames="['D','S','T','Q','Q','S','S']"
+		monthNames="['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']"
+	 	id="dtEnt" tabIndex="2" width="101.5"/>
+	<mx:Label x="273" y="10" text="Data da Reserva"/>
+	<mx:DateField x="391" y="8" editable="true" showToday="true"
+		formatString="DD/MM/YY"
+		text="{df.format(new Date())}"
+		dayNames="['D','S','T','Q','Q','S','S']"
+		monthNames="['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']"		
+	 	id="dtReserva" tabIndex="10" width="101"/>
+	<mx:DateField x="271.5" y="68" editable="true"
+		formatString="DD/MM/YY"
+		disabledRanges="{antes}"
+		dayNames="['D','S','T','Q','Q','S','S']"
+		monthNames="['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']"		
+	 	id="dtSai" tabIndex="3" width="101"/>
+	<mx:Label x="244.5" y="70" text="a"/>
+	<mx:Button x="379" y="68" label="Incluir Quartos" width="113" click="{incluirQuartos()}" id="btnIncluiQuartos" tabIndex="4"/>
+	<mx:ControlBar>
+		<mx:Button label="Cancelar" icon="@Embed('../images/close.png')" click="{sair()}" tabIndex="12"/>
+		<mx:Button label="Salvar" click="salvarSair()" enabled="true" id="btnSalvar" icon="@Embed('../images/ok.png')" tabIndex="11"/>
+		<mx:Label width="175"/>
+		<mx:Button label="Incluir Cliente" id="btnIncluirCliente" click="abrirCli()" icon="@Embed('../images/add.png')"/>
+	</mx:ControlBar>
+</mx:TitleWindow>

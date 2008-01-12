@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" title="Usuários do Sistema" width="492" height="388">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ValidationResultEvent;
+			import mx.validators.Validator;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.core.Application;
+			import mx.controls.Alert;
+			import mx.utils.ObjectUtil;
+			
+			[Bindable]
+			private var dpGrid:Object;
+
+			public var itens: Array = [{label:"Gerente", data:"1"}, 
+                {label:"Atendente", data:"2"}];
+			
+			public function init():void{
+				listaUsuarios();
+			}
+			
+			public function listaUsuarios():void{
+				listUsuarios.send();
+			}
+			
+			public function hrdpGrid(event:ResultEvent):void{
+				dpGrid = null;
+				dpGrid = event.result.list.Usuario;
+			}
+			
+			public function carregaDados():void{
+				var i : int;
+				codigo.text = dg.selectedItem.codigo;
+				nome.text = dg.selectedItem.nome;
+				senha.text = dg.selectedItem.senha;
+				for ( i=0; i<itens.length; i++){
+					if (dg.selectedItem.nivel==itens[i].data)
+						nivel.text = itens[i].label;
+				}
+			}
+			
+			public function alterar():void{
+				if ( dg.selectedIndex == -1)
+					Alert.show("Selecione um Registro!");
+				else{
+					habilitaEdic(true);
+					habilitaAlter(true);
+					nome.setFocus();
+				}
+			}
+			
+			public function habilitaEdic(hab:Boolean):void{
+				nome.enabled = hab;
+				senha.enabled = hab;
+				nivel.enabled = hab;
+			}
+			
+			public function cancelaOper():void{
+				limpaCampos();
+				habilitaEdic(false);
+				habilitaAlter(false);
+				carregaDados();
+			}
+			
+			public function criaNovo():void{
+				limpaCampos();
+				habilitaEdic(true);
+				habilitaAlter(true);
+				nome.setFocus();
+			}
+			
+			public function limpaCampos():void{
+				codigo.text = "";
+				nome.text = "";
+				senha.text = "";
+				nivel.text = "";
+			}
+			
+			public function habilitaAlter(hab:Boolean):void{
+				if (hab){
+					btnNovo.enabled = false;
+					btnAlterar.enabled = false;
+					btnSalvar.enabled = true;
+					btnCancelar.enabled = true;
+					btnFechar.enabled = false;
+					pdg.enabled = false;
+				} else {
+					btnNovo.enabled = true;
+					btnAlterar.enabled = true;
+					btnSalvar.enabled = false;
+					btnCancelar.enabled = false;
+					btnFechar.enabled = true;
+					pdg.enabled = true;					
+				}
+			}
+			
+			public function usuarioGravado(event:ResultEvent):void{
+				Alert.show( String (event.result) );
+				listaUsuarios();
+			}
+			
+			public function erroGravando(event:FaultEvent):void{
+				Alert.show( ObjectUtil.toString(event.fault));
+			}
+			
+			public function getParameters():Object{
+				return {
+					"usuario.codigo" : codigo.text,
+					"usuario.nome" : nome.text,
+					"usuario.senha" : senha.text,
+					"usuario.nivel" : nivel.selectedItem.data
+				}
+			}
+			
+			public function salvarUsuario():void{
+				 if (validar()) {
+					saveUsuario.send( this.getParameters() );
+					limpaCampos();
+					habilitaEdic(false);
+					habilitaAlter(false);
+				 }
+			}
+			
+			public function validar():Boolean{
+				var valido : Boolean;
+				
+				for each (var v : Validator in validadores ){
+					var resultEvent : ValidationResultEvent = v.validate();
+					if( resultEvent.type != ValidationResultEvent.VALID ){
+						valido = false;
+						break;
+					} else {
+						valido = true;
+					}
+				}
+				return valido;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Array id="validadores">
+		
+		<mx:StringValidator source="{nome}" minLength="2" required="true" property="text"
+			requiredFieldError="Nome não pode ser vazio." tooShortError="Nome deve ter no mínimo 2 caracteres."
+		/>
+		
+		<mx:StringValidator source="{senha}" minLength="4" required="true" property="text"
+			requiredFieldError="Senha não pode ser vazia." tooShortError="Senha deve ter no mínimo 4 caracteres."
+		/> 
+
+		<mx:StringValidator source="{nivel}" required="true" property="text"
+			requiredFieldError="Escolha um nível."
+		/>
+	</mx:Array>
+	
+	<mx:HTTPService
+		id="saveUsuario"
+		url="http://{Application.application.Servidor}/hotel/flex/fusuario!save.action"
+		result="usuarioGravado(event)"
+		fault="erroGravando(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="listUsuarios"
+		url="http://{Application.application.Servidor}/hotel/flex/fusuario!list.action"
+		result="hrdpGrid(event)"
+		showBusyCursor="true"
+	/>
+	
+	<mx:Label x="10" y="10" text="Código"/>
+	<mx:Label x="10" y="40" text="Nome"/>
+	<mx:Label x="10" y="70" text="Senha"/>
+	<mx:Label x="197" y="70" text="Nível"/>
+	<mx:TextInput x="62" y="8" width="53" id="codigo" enabled="false"/>
+	<mx:TextInput x="62" y="38" width="308" id="nome" enabled="false" maxChars="40"/>
+	<mx:TextInput x="62" y="68" width="111" displayAsPassword="true" id="senha" enabled="false" maxChars="6"/>
+	<mx:ComboBox dataProvider="{itens}" x="236" y="68" width="134" id="nivel" enabled="false">
+	</mx:ComboBox>
+	<mx:Panel id="pdg" x="0" y="106" layout="absolute" title="Usuários Cadastrados" height="100%" width="100%">
+		<mx:DataGrid id="dg" dataProvider="{dpGrid}" x="0" y="0" width="100%"
+			change="{carregaDados()}" height="100%">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+				<mx:DataGridColumn headerText="Nome" dataField="nome"/>
+				<mx:DataGridColumn headerText="Nível" dataField="nivel" width="100"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="senha"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Panel>
+	<mx:ControlBar height="56">
+		<mx:Button label="Novo" id="btnNovo" icon="@Embed('../images/add.png')" click="{criaNovo()}"/>
+		<mx:Button label="Alterar" id="btnAlterar" icon="@Embed('../images/alter.png')" click="{alterar()}"/>
+		<mx:Button label="Salvar" enabled="false" id="btnSalvar" icon="@Embed('../images/ok.png')" click="{salvarUsuario()}"/>
+		<mx:Button label="Cancelar" enabled="false" id="btnCancelar" icon="@Embed('../images/cancel.png')" click="{cancelaOper()}"/>
+		<mx:Button label="Fechar" id="btnFechar" click="{PopUpManager.removePopUp(this)}" icon="@Embed('../images/close.png')"/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>

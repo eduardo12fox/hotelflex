@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="482" height="420" title="Quartos">
+
+<mx:Script>
+	<![CDATA[
+		import mx.validators.Validator;
+		import mx.rpc.events.FaultEvent;
+		import mx.collections.ArrayCollection;
+		import mx.rpc.events.ResultEvent;
+		import mx.events.CloseEvent;
+		import mx.managers.PopUpManager;
+		import mx.controls.Alert;
+		import mx.utils.ObjectUtil;
+		import mx.core.Application;
+		import mx.events.ValidationResultEvent;
+
+		public function getParameters():Object{
+			return {
+				"quarto.codigo" : codigo.text,
+				"quarto.descricao" : descricao.text,
+				"quarto.valor" : valor.text,
+				"quarto.numero" : numero.text,
+				"quarto.tipo" : tipo.selectedItem.data		
+			}
+		}
+
+		public function salvarQuarto():void{
+			if (validar()){
+				saveQuarto.send( this.getParameters() );
+				limpaCampos();
+				habilitaAlter(false);
+				habilitaEdic(false);
+			}			
+		}
+		
+		public function validar():Boolean{
+			var valido : Boolean;
+			for each ( var v : Validator in validadores ){
+				var resultEvent : ValidationResultEvent = v.validate();
+				if ( resultEvent.type != ValidationResultEvent.VALID ) {
+					valido = false;
+					break;
+				} else {
+					valido = true;
+				}
+			}
+			return valido;
+		}
+
+        public function criaNovo():void{
+      		limpaCampos();
+      		habilitaEdic(true);
+      		habilitaAlter(true);
+      		descricao.setFocus();      		
+        }
+
+		public function limpaCampos():void{
+			codigo.text = "";
+			descricao.text = "";
+			valor.text = "";
+			numero.text = "";
+			tipo.text = "";
+		}
+
+	    public function cancelaOper():void{
+	    	limpaCampos();
+	    	habilitaEdic(false);
+	      	habilitaAlter(false);
+	      	carregaDados();
+	    }
+		
+		public function habilitaEdic(hab : Boolean):void{
+			descricao.enabled = hab;
+			valor.enabled = hab;
+			numero.enabled = hab;
+			tipo.enabled = hab;
+		}
+		
+		public function habilitaAlter(hab : Boolean):void{
+			if (hab) {
+      			btnNovo.enabled = false;
+		      	btnAlterar.enabled = false;
+		      	btnFechar.enabled = false;
+		      	pdg.enabled = false;
+		      	btnSalvar.enabled = true;
+		      	btnCancelar.enabled = true;				
+			} else {
+		      	btnNovo.enabled = true;
+		      	btnAlterar.enabled = true;
+		      	btnFechar.enabled = true;
+		       	pdg.enabled = true;
+		       	btnSalvar.enabled = false;
+		      	btnCancelar.enabled = false;				
+			}
+		}
+		
+        public function alterar():void{
+       		if (dg.selectedIndex == -1)
+      			Alert.show("Selecione um Registro!");
+      		else{
+      			habilitaEdic(true);
+      			habilitaAlter(true);
+      			descricao.setFocus();
+      		}
+        }		
+		
+		public function carregaDados():void{
+			var i : int;
+			codigo.text = dg.selectedItem.codigo;
+			descricao.text = dg.selectedItem.descricao;
+			valor.text = dg.selectedItem.valor;
+			numero.text = dg.selectedItem.numero;
+			for ( i=0; i < lTipoQuarto.length; i++){
+				if (dg.selectedItem.tipo == lTipoQuarto[i].data)
+					tipo.text = lTipoQuarto[i].label;
+			}
+		}
+		
+		public function init():void{
+			listarQuartos();
+			obterTipos();
+		}
+		
+		public function listarQuartos():void{
+			listQuartos.send();
+		}
+		
+		public function obterTipos():void{
+			listTipoQuarto.send();
+		}
+		
+		public function hrdpGrid(event:ResultEvent):void{
+			dpGrid = null;
+			dpGrid = event.result.list.Quarto;
+		}
+		
+		public function resTipo(event:ResultEvent):void{
+			var res : ArrayCollection;
+			var i : int;
+			res = event.result.list.TipoQuarto;
+			var itens : Array = [{label:res[0].descricao,data:res[0].codigo}];
+			for ( i=1; i< res.length; i++ ){
+				itens.push({label:res[i].descricao,data:res[i].codigo});
+			}
+			lTipoQuarto = itens;
+		}
+
+		public function gravado(event:ResultEvent):void{
+			Alert.show( String (event.result) );
+			listarQuartos();
+		}
+		
+		public function erro(event:FaultEvent):void{
+			Alert.show( ObjectUtil.toString(event.fault));
+		}
+		
+        private function format():void {
+  			var valt:String = "";
+  			var i : int;
+  			for ( i = 0; i<valor.length; i++ ){
+  				if (valor.text.charAt(i)==",")
+  			    	valt = valt + ".";
+  				else
+  					valt = valt + valor.text.charAt(i);
+  			}
+            var temp:Number=Number(valt); 
+            valor.text = String (temp);
+            
+  		}
+		
+		[Bindable]
+		private var dpGrid:Object;
+		[Bindable]
+		private var lTipoQuarto:Array;
+	]]>
+</mx:Script>
+
+	<mx:HTTPService
+		id="saveQuarto"
+		url="http://{Application.application.Servidor}/hotel/flex/fquarto!save.action"
+		result="gravado(event)"
+		fault="erro(event)"
+		method="POST"
+	/>
+
+	<mx:HTTPService
+		id="listQuartos"
+		url="http://{Application.application.Servidor}/hotel/flex/fquarto!list.action"
+		result="hrdpGrid(event)"
+	/>
+	<mx:HTTPService
+		id="listTipoQuarto"
+		url="http://{Application.application.Servidor}/hotel/flex/ftipoquarto!list.action"
+		result="resTipo(event)"
+	/>
+
+	<mx:Array id="validadores">
+		
+		<mx:StringValidator source="{descricao}" property="text" required="true"
+			requiredFieldError="Descrição não pode ser vazia."
+		/>
+		
+		<mx:StringValidator source="{numero}" property="text" required="true"
+			requiredFieldError="Escolha um número para o quarto."
+		/>
+		
+		<mx:CurrencyValidator source="{valor}" property="text" required="true" precision="2"
+			decimalSeparator="."
+			thousandsSeparator=","
+			precisionError="No máximo 2 casas decimais."
+			requiredFieldError="Defina um valor para locação do quarto."
+			allowNegative="false"
+			negativeError="Valor não pode ser negativo."
+		/>
+
+		<mx:StringValidator source="{tipo}" property="text" required="true"
+			requiredFieldError="Escolha um tipo para o quarto."
+		/>
+		
+	</mx:Array>
+
+	<mx:Panel x="0" y="126" width="462" height="206" layout="absolute" title="Quartos Cadastrados" id="pdg">
+		<mx:DataGrid dataProvider="{dpGrid}" id="dg" x="0" y="0" width="442" height="166" change="{carregaDados()}">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+				<mx:DataGridColumn headerText="Descrição" dataField="descricao"/>
+				<mx:DataGridColumn headerText="Valor" dataField="valor" width="100"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="numero"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="tipo"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Panel>
+	<mx:Label x="10" y="10" text="Código"/>
+	<mx:Label x="10" y="40" text="Descrição"/>
+	<mx:Label x="10" y="70" text="Número"/>
+	<mx:Label x="138" y="70" text="Tipo"/>
+	<mx:Label x="10" y="100" text="Valor"/>
+	<mx:TextInput x="75" y="8" width="46" id="codigo" enabled="false"/>
+	<mx:TextInput x="75" y="68" width="46" id="numero" enabled="false" maxChars="4"/>
+	<mx:TextInput x="75" y="98" width="92" id="valor" enabled="false" focusOut="format()"/>
+	<mx:TextInput x="75" y="38" width="295" id="descricao" enabled="false" maxChars="40"/>
+	<mx:ComboBox dataProvider="{lTipoQuarto}" x="175" y="68" width="195" id="tipo" enabled="false"></mx:ComboBox>
+	<mx:ControlBar height="56" y="328">
+		<mx:Button label="Novo" id="btnNovo" icon="@Embed('../images/add.png')" click="{criaNovo()}"/>
+		<mx:Button label="Alterar" id="btnAlterar" icon="@Embed('../images/alter.png')" click="{alterar()}"/>
+		<mx:Button label="Salvar" enabled="false" id="btnSalvar" icon="@Embed('../images/ok.png')" click="{salvarQuarto()}"/>
+		<mx:Button label="Cancelar" enabled="false" id="btnCancelar" icon="@Embed('../images/cancel.png')" click="{cancelaOper()}"/>
+		<mx:Button label="Fechar" id="btnFechar" click="{PopUpManager.removePopUp(this)}" icon="@Embed('../images/close.png')"/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>

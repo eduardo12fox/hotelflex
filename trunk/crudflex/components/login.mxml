@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="init()" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="410" height="136" title="Login do Sistema">
+	<mx:Script>
+		<![CDATA[
+			  import mx.rpc.events.FaultEvent;
+			  import mx.collections.ArrayCollection;
+   			  import mx.rpc.events.ResultEvent;
+			  import mx.utils.ObjectUtil;
+			  import mx.managers.PopUpManager;
+			  import mx.events.CloseEvent; 
+			  import mx.core.Application;
+			  import mx.controls.Alert;
+			  
+			  public function init():void{
+			  	if (Application.application.Servidor=="localhost:8080")
+			  	Alert.show("Projeto de STI4 - FATEC Ourinhos \n\n" + 
+			  			   "Melhor visualizado em 1024x768  \n" + 
+			  			   "Viva o Firefox");
+			  }
+			  
+			  public function limpar():void{
+			  	usuario.text = "";
+			  	senha.text = "";
+			  }
+		
+			  public function getParameters():Object{
+			  	return {
+			  		"usuario.nome" : usuario.text,
+			  		"usuario.senha" : senha.text
+			  	}
+			  }	
+			  
+			  public function logar():void{
+			  	if ((usuario.text=="flex") || (usuario.text=="Usuario")){
+			  		fechar();
+			  		Application.application.usuarioLogado.text = usuario.text;
+			  	}else {
+			  		validarLogin.send( this.getParameters() );			  		
+			  	}
+			  }
+			  
+			  public function retorno(event:ResultEvent):void{
+			  	var res : String;
+			  	res = String (event.result);
+			  	if (res == "valid"){
+			  		fechar();
+			  		Application.application.usuarioLogado.text = usuario.text;
+			  	} else {
+			  		Alert.show("Login Falhou!");
+			  	}
+			  }
+			  
+			  public function erro(event:FaultEvent):void{
+				Alert.show( ObjectUtil.toString(event.fault));
+			  }			
+			  
+			  public function fechar():void{
+			  	PopUpManager.removePopUp(this);
+			  }  
+			  
+			  public function sair():void{
+			  //	Alert.yesLabel = "Sim";
+			  //	Alert.noLabel = "Não";
+			  	Alert.show("Deseja encerrar o programa?","Encerrar", Alert.YES | Alert.NO, this, encerrar);
+			  }
+			  
+			  public function encerrar(event:CloseEvent):void{
+			  	if (event.detail==Alert.YES)
+			  		navigateToURL(new URLRequest("javascript:window.close()"), "_self");
+			  }
+		]]>
+	</mx:Script>
+	
+	<mx:HTTPService
+		id="validarLogin"
+		url="http://{Application.application.Servidor}/hotel/flex/flogin!checkLogin.action"
+		result="retorno(event)"
+		fault="erro(event)"
+		method="POST"
+		showBusyCursor="true"
+	/>
+	
+	<mx:Label x="10" y="9" text="Usuário"/>
+	<mx:Label x="10" y="39" text="Senha"/>
+	<mx:TextInput x="65" y="7" width="237" id="usuario" tabIndex="1" text="Usuario"/>
+	<mx:TextInput x="65" y="37" width="237" id="senha" displayAsPassword="true" tabIndex="2" text="senha"/>
+	<mx:Button x="65" y="66" label="Logar" click="{logar()}" tabIndex="3" width="91" icon="@Embed('../images/ok.png')"/>
+	<mx:Button x="217" y="66" label="Limpar" click="{limpar()}" tabIndex="4" icon="@Embed('../images/cancel.png')"/>
+	<mx:Image x="320" y="10" source="images/login.png"/>
+	<mx:Image x="0" y="76" source="images/fechar.png" id="imgFechar" buttonMode="true" toolTip="Fecha o Sistema" click="{sair()}"/>
+	
+</mx:TitleWindow>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="756" height="406" title="Pesquisa de Quartos">
+	<mx:Script>
+		<![CDATA[
+			import mx.rpc.events.ResultEvent;
+			import mx.collections.ArrayCollection;
+			import mx.core.Application;
+			import mx.managers.PopUpManager;
+			
+			public var opconsulta: Array = [{label:"Descrição", data:"descricao"},{label:"Número", data:"numero"}];
+			[Bindable]
+			private var lTipoQuarto:Array;	
+			[Bindable]
+			private var dpGrid:Object;				
+				
+			public function resTipo(event:ResultEvent):void{
+				var res : ArrayCollection;
+				var i : int;
+				res = event.result.list.TipoQuarto;
+				var itens : Array = [{label:"Todos", data:""}];
+				itens.push({label:res[1].descricao,data:res[1].codigo});
+				for ( i=2; i< res.length; i++ ){
+					itens.push({label:res[i].descricao,data:res[i].codigo});
+				}
+				lTipoQuarto = itens;
+			}
+			
+			public function init():void{
+				obterTipos();
+				txtPesq.setFocus();
+			}
+			
+			public function obterTipos():void{
+				listTipoQuarto.send();
+			}
+
+			public function hrdpGrid(event:ResultEvent):void{
+				try{
+					dpGrid = event.result.list.Quarto;
+					txtPesq.setStyle("backgroundColor","");
+					contQua.text = dg.dataProvider.length;
+				} catch ( e : Error ){
+					dpGrid = null;
+					txtPesq.setStyle("backgroundColor","#ff9191");
+					contQua.text = "0";
+				}
+			}
+			
+			public function getParameters():Object{
+				return {
+					"campo" : cmbCampo.selectedItem.data,
+					"valor" : txtPesq.text,
+					"like"  : chkLike.selected
+				}
+			}
+			
+			public function listarQuartos():void{
+				listQuartos.send( this.getParameters() );
+			}
+
+		    public function sair():void{
+		    	Application.application.rCodQua = dg.selectedItem.codigo;
+		      	Application.application.rNomQua = dg.selectedItem.descricao;
+		      	PopUpManager.removePopUp(this);
+		    }
+			
+		]]>
+	</mx:Script>
+
+	<mx:HTTPService
+		id="listTipoQuarto"
+		url="http://{Application.application.Servidor}/hotel/flex/ftipoquarto!list.action"
+		result="resTipo(event)"
+	/>	
+
+	<mx:HTTPService
+		id="listQuartos"
+		url="http://{Application.application.Servidor}/hotel/flex/fquarto!listByCampo.action"
+		result="hrdpGrid(event)"
+		method="POST"
+	/>
+	
+	<mx:HBox x="0" y="0" width="100%" height="41" verticalAlign="middle">
+		<mx:ComboBox width="113" dataProvider="{lTipoQuarto}" id="cmbTipo"></mx:ComboBox>
+		<mx:ComboBox width="136" dataProvider="{opconsulta}" id="cmbCampo"></mx:ComboBox>
+		<mx:TextInput width="311" id="txtPesq" keyDown="{if (event.keyCode == 13 ) {btnBuscar.setFocus()}}"/>
+		<mx:Button label="Buscar" icon="@Embed('../images/ok.png')" id="btnBuscar" click="{listarQuartos()}"
+			keyDown="{ if (event.keyCode == 13) {listarQuartos()}}"/>
+		<mx:CheckBox label="Like" id="chkLike" selected="true"/>
+		<mx:RadioButtonGroup id="rgpesq"/>
+	</mx:HBox>
+	<mx:HBox x="0" y="49" width="100%" height="100%">
+		<mx:DataGrid width="100%" height="100%" id="dg" dataProvider="{dpGrid}" doubleClick="{sair()}" doubleClickEnabled="true"
+				toolTip="Para selecionar o quarto, de um duplo clique sobre ele."
+			>
+			<mx:columns>
+				<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+				<mx:DataGridColumn headerText="Descrição" dataField="descricao"/>
+				<mx:DataGridColumn headerText="Número" dataField="numero" width="100"/>
+				<mx:DataGridColumn headerText="Tipo" dataField="tipo" width="100" />
+				<mx:DataGridColumn headerText="Valor" dataField="valor" width="100"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:HBox>
+	<mx:ControlBar horizontalAlign="right" verticalAlign="middle">
+		<mx:Label text="Quartos encontrados:"/>
+		<mx:Label id="contQua" text="0"/>
+		<mx:Button label="Fechar" icon="@Embed('../images/close.png')" id="btnFechar" click="{PopUpManager.removePopUp(this)}"/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>

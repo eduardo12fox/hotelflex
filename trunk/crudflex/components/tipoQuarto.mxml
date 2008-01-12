@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="478" height="366" title="Tipo de Quarto">
+	<mx:Script>
+		<![CDATA[
+			import mx.validators.Validator;
+			import mx.events.ValidationResultEvent;
+			import mx.validators.ValidationResult;
+			import mx.rpc.events.ResultEvent;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.controls.Alert;
+			import mx.core.Application;
+			
+			public function criaNovo():void{
+		      	limpaCampos();
+		      	habilitaEdic(true);
+		      	descricao.setFocus();
+		      	habilitaAlter();
+		      }
+			
+			public function limpaCampos():void{
+				codigo.text = "";
+				descricao.text = "";
+			}
+			
+			public function cancelaOper():void{
+		      	limpaCampos();
+		      	habilitaEdic(false);
+		      	desabilitaAlter();
+		      }
+			
+			public function alterar():void{
+		      	if (dg.selectedIndex == -1)
+		      		Alert.show("Selecione um Registro!");
+		      	else{
+		      		habilitaEdic(true);
+		      		habilitaAlter();
+		      		descricao.setFocus();
+		      	}
+		      }
+			
+			public function habilitaEdic( hab:Boolean ):void{
+				descricao.enabled = hab;
+			}
+
+     		 public function habilitaAlter():void{
+     		 	btnNovo.enabled = false;
+     		 	btnAlterar.enabled = false;
+     		 	btnFechar.enabled = false;
+     		 	pdg.enabled = false;
+    		  	btnSalvar.enabled = true;
+   			   	btnCancelar.enabled = true;
+  		    }
+      
+  		    public function desabilitaAlter():void{
+	   		   	btnNovo.enabled = true;
+		      	btnAlterar.enabled = true;
+		      	btnFechar.enabled = true;
+		       	pdg.enabled = true;
+		       	btnSalvar.enabled = false;
+		      	btnCancelar.enabled = false;
+	   	   }
+
+			public function carregaDados():void{
+				codigo.text = dg.selectedItem.codigo;
+				descricao.text = dg.selectedItem.descricao;
+			}
+			
+			public function validar():Boolean{
+				var valido : Boolean;
+				for each ( var v : Validator in validadores ){
+					var resultEvent : ValidationResultEvent = v.validate();
+					if ( resultEvent.type != ValidationResultEvent.VALID ){
+						valido = false;
+						break;
+					} else {
+						valido = true;
+					}
+				}
+				return valido;
+			}
+			
+			public function getParameters():Object {
+				return {
+					"tipoquarto.codigo": codigo.text,
+					"tipoquarto.descricao": descricao.text
+				};
+			}
+			
+			public function salvarTipo():void{
+				if (validar()){
+					saveTipo.send( this.getParameters() );
+					limpaCampos();
+					desabilitaAlter();
+					habilitaEdic(false);
+				}
+			}
+			
+			public function init():void{
+				listaTipos();
+			}
+			
+			public function tipoGravado(event:ResultEvent):void{
+				Alert.show( String (event.result) );
+				listaTipos();
+			}
+			
+			public function listaTipos():void{
+				listTipos.send();
+			}
+			
+			public function hrdpGrid(event:ResultEvent):void{
+				dpGrid = null;
+				dpGrid = event.result.list.TipoQuarto;
+			}
+			
+			[Bindable]
+			private var dpGrid:Object;
+		]]>
+	</mx:Script>
+	
+	<mx:Array id="validadores">
+		<mx:StringValidator source="{descricao}" property="text" required="true"
+			requiredFieldError="Descrição não pode ser vazia."
+		/>
+	</mx:Array>
+	
+	<mx:HTTPService
+		id="saveTipo"	
+		url="http://{Application.application.Servidor}/hotel/flex/ftipoquarto!save.action"
+		result="tipoGravado(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="listTipos"
+		url="http://{Application.application.Servidor}/hotel/flex/ftipoquarto!list.action"
+		result="hrdpGrid(event)"
+	/>
+	
+	<mx:Label x="10" y="10" text="Código"/>
+	<mx:Label x="10" y="40" text="Descrição"/>
+	<mx:TextInput x="75" y="8" width="53" id="codigo" enabled="false"/>
+	<mx:TextInput x="75" y="38" width="308" id="descricao" enabled="false" maxChars="40"/>
+	<mx:Panel id="pdg" x="0" y="68" width="458" height="210" layout="absolute" title="Tipos Cadastrados">
+		<mx:DataGrid id="dg" x="0" y="0" width="438" height="170" dataProvider="{dpGrid}"
+			change="{carregaDados()}"	
+		>
+			<mx:columns>
+				<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+				<mx:DataGridColumn headerText="Descrição" dataField="descricao"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Panel>
+	<mx:ControlBar height="56">
+		<mx:Button label="Novo" id="btnNovo" icon="@Embed('../images/add.png')" click="{criaNovo()}"/>
+		<mx:Button label="Alterar" id="btnAlterar" icon="@Embed('../images/alter.png')" click="{alterar()}"/>
+		<mx:Button label="Salvar" enabled="false" id="btnSalvar" icon="@Embed('../images/ok.png')" click="{salvarTipo()}"/>
+		<mx:Button label="Cancelar" enabled="false" id="btnCancelar" icon="@Embed('../images/cancel.png')" click="{cancelaOper()}"/>
+		<mx:Button label="Fechar" id="btnFechar" click="{PopUpManager.removePopUp(this)}" icon="@Embed('../images/close.png')"/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>

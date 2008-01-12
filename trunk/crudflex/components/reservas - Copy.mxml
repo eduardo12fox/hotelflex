@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" 
+	xmlns:cp="components.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" 
+	width="652" height="456" title="Reservas" x="200" y="20">
+	<mx:Script>
+		<![CDATA[
+			import mx.rpc.events.ResultEvent;
+			import components.novaReserva;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.effects.easing.Bounce;
+			import mx.controls.Alert;
+			import mx.core.Application;
+			import components.hospedar;
+			
+			[Bindable]
+			var dpGridReservas : Object;	
+			[Bindable]
+			var dpGridQuartos : Object;	
+
+			public function fDtReserva(item:Object, column:DataGridColumn):String{
+				return df.format(new Date("2007-11-25"));
+			}
+	
+			//Função para abrir a tela de Encerramento ou abertura de Hospedagem.
+			public function abrirHospedar():void{
+				if (dgReservas.selectedIndex==-1)
+					Alert.show("Não há reservas selecionadas!");
+				else {	
+				var hosp : hospedar = hospedar(PopUpManager.createPopUp(this, components.hospedar , true));
+				hosp.numReserva = txtCodigo.text;
+				hosp.datReserva = txtData.text;
+				hosp.iniReserva = txtDtRes1.text;
+				hosp.fimReserva = txtDtRes2.text;
+				hosp.nomCliente = txtCliente.text;
+				hosp.numCliente = dgReservas.selectedItem.cliente;
+				PopUpManager.centerPopUp(hosp);
+				popUpEffect.target = hosp;
+				popUpEffect.play();
+				}
+			}			
+		
+			public function init():void{
+				this.currentState = "comFiltro";
+				listaReservas();
+			}
+		
+			public function mostraFiltro():void{
+				this.currentState = "comFiltro";
+		//		PopUpManager.centerPopUp(this);
+			}
+			public function ocultaFiltro():void{
+				this.currentState = "";
+		//		PopUpManager.centerPopUp(this);
+			}	
+			public function criarReserva():void{
+				var nova : novaReserva = novaReserva(PopUpManager.createPopUp(this, components.novaReserva , true));
+				nova.cliente.setFocus();
+				PopUpManager.centerPopUp(nova);
+				popUpEffect.target = nova;
+				popUpEffect.play();
+			}
+			public function resultListReservas(event:ResultEvent):void{
+				try{
+					dpGridReservas = event.result.list.Reserva;
+				} catch ( e : Error ){
+					dpGridReservas = null;
+					Alert.show("Não consta registros!");
+				}
+			}
+			public function getParametersReserva():Object{
+				var f1 : String;
+				var f2 : String;
+				var f3 : String;
+				var f4 : String;
+				if (flag1.selected)
+					f1 = "R"; 
+				if (flag2.selected)
+					f2 = "H";
+				if (flag3.selected)
+					f3 = "C";
+				if (flag4.selected)
+					f4 = "F";				
+				
+				return {
+					"cliente"    : cliente.text,					
+					"dtReserva1" : dtReserva1.text ,
+					"dtReserva2" : dtReserva2.text , 
+					"dtPrevEnt1" : dtPrevEnt1.text ,
+					"dtPrevEnt2" : dtPrevEnt2.text ,
+					"dtHosp1"    : dtHosp1.text ,
+					"dtHosp2"    : dtHosp2.text ,
+					"flag1"      : f1,
+					"flag2"      : f2,
+					"flag3"      : f3,
+					"flag4"      : f4
+				}
+			}
+			public function listaReservas():void{
+				listReservas.send( getParametersReserva() );
+			}
+			public function carregaDados():void{
+				txtCodigo.text = dgReservas.selectedItem.codigo;
+				txtData.text = dfx.format(dgReservas.selectedItem.dtreserva);
+				txtCliente.text = dgReservas.selectedItem.nome;
+				txtStatus.text = dgReservas.selectedItem.flag;
+				txtDtRes1.text = dgReservas.selectedItem.dtprevent;
+				txtDtRes2.text = dgReservas.selectedItem.dtprevsai;
+				txtDtHosp1.text = dgReservas.selectedItem.dtentrada;
+				txtDtHosp2.text = dgReservas.selectedItem.dtsaida;
+			}
+			
+			 private function defineCor( data: Object, color: uint): uint {
+				if (data.flag == "R")
+				{
+					color = 0xd7fb9c;
+				}
+				else if (data.flag == "H")
+				{
+					color = 0xffffcc;
+				}
+				else if (data.flag == "F")
+				{
+					color = 0xe6ffff;
+				}
+				else if (data.flag == "C")
+				{
+					color = 0xffd3d2;
+				}
+				
+				return color;
+			 }
+
+			public function resultSaveReserva(event : ResultEvent):void{
+				listaReservas();
+			}
+			
+			public function getParametersSetFlag( nFlag : String):Object{
+				return {
+					"id" : txtCodigo.text,
+					"flag" : nFlag
+				}
+			}
+			
+			public function alterFlag( nFlag : String ):void{
+					saveReserva.send( getParametersSetFlag( nFlag ) );
+			}
+			
+			public function cancelarReserva():void{
+				if (dgReservas.selectedIndex==-1){
+					Alert.show("Não há reservas selecionadas!");
+				} else {				
+					Alert.yesLabel = "Sim";
+					Alert.noLabel = "Não";
+					Alert.show("Cancelar Rerserva?","Reserva", Alert.YES | Alert.NO ,this, rCancelarReserva);
+				}
+			}
+			
+			public function rCancelarReserva( event : CloseEvent ):void{
+				if (event.detail == Alert.YES)
+					alterFlag( "C" );
+			}
+			
+			public function limpa():void{
+					cliente.text = "";					
+					dtReserva1.text = "";
+					dtReserva2.text = "";
+					dtPrevEnt1.text = "";
+					dtPrevEnt2.text = "";
+					dtHosp1.text = "";
+					dtHosp2.text = "";
+					flag1.selected = true;
+					flag2.selected = false;
+					flag3.selected = false;
+					flag4.selected = false;
+					listaReservas();
+			}
+			
+			public function hrdpGrid(event:ResultEvent):void{
+				try{
+					dpGridQuartos = event.result.list.QuartoReserva;
+				} catch ( e : Error ){
+					dpGridQuartos = null;
+					//Alert.show("Erro!");
+				}
+			}
+							
+			public function listarQuartos():void{
+				if (dgReservas.selectedIndex==-1){
+					dpGridQuartos = null;
+					Alert.show("Não há reservas selecionadas!");
+				}
+				else {				
+					listQuartos.send( this.getParameters() );
+				}
+			}
+			
+			public function getParameters():Object{
+				return {
+					"reserva" : txtCodigo.text
+				}
+			}			
+		]]>
+	</mx:Script>
+
+	<mx:HTTPService
+		id="listQuartos"
+		url="http://{Application.application.Servidor}/hotel/flex/fquartoreserva!list.action"
+		result="hrdpGrid(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="saveReserva"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!setFlag.action"
+		result="resultSaveReserva(event)"
+		method="POST"
+	/>
+	
+	<mx:HTTPService
+		id="listReservas"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!getList.action"
+		result="resultListReservas(event)"
+		method="POST"
+	/>	
+	
+	<mx:DateFormatter formatString="DD/MM/YYY" id="dfx"/>
+	
+	<mx:Parallel id="popUpEffect">
+	<mx:Fade alphaFrom="0" alphaTo="1"/>
+	<mx:WipeDown moveEasingFunction="Bounce.easeOut" duration="900"/>
+	</mx:Parallel>
+	
+	<mx:transitions>
+       <mx:Transition fromState="*" toState="*">
+            <!-- Parallel effects execute in unison --> 
+            <mx:Parallel targets="{[mostrarFiltro,this]}">
+            	<mx:Resize duration="500" easingFunction="Bounce.easeOut"/>
+                <mx:Sequence target="{pnFiltro}">
+                    <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0" />            
+                    <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1" />            
+                </mx:Sequence>
+            </mx:Parallel>
+        </mx:Transition>
+    </mx:transitions>
+	
+	
+	<mx:states>
+		<mx:State name="comFiltro">
+			<mx:SetProperty target="{tabnavigator1}" name="y" value="216"/>
+			<mx:SetProperty target="{hbox1}" name="y" value="176"/>
+			<mx:AddChild position="lastChild">
+				<mx:Panel id="pnFiltro" x="0" y="0" width="632" height="168" layout="absolute" title="Opçoes de Filtro">
+					<mx:Label x="10" y="10" text="Cliente"/>
+					<mx:Label x="10" y="40" text="Data Registro"/>
+					<mx:TextInput id="cliente" x="131" y="8" width="35"/>
+					<mx:TextInput x="202" y="8" width="391"/>
+					<mx:DateField editable="true" x="132" y="38" width="102" id="dtReserva1"/>
+					<mx:DateField editable="true" x="259" y="38" width="102" id="dtReserva2"/>
+					<mx:Label x="10" y="70" text="Data Hospedagem"/>
+					<mx:DateField editable="true" x="132" y="68" width="102" id="dtPrevEnt1"/>
+					<mx:DateField editable="true" x="259" y="68" width="102" id="dtPrevEnt2"/>
+					<mx:Label x="10" y="100" text="Data Hospedagem"/>
+					<mx:DateField editable="true" x="132" y="98" width="102" id="dtHosp1"/>
+					<mx:DateField editable="true" x="259" y="98" width="102" id="dtHosp2"/>
+					<mx:Label x="240" y="100" text="a" width="15"/>
+					<mx:Label x="240" y="70" text="a" width="15"/>
+					<mx:Label x="240" y="40" text="a" width="15"/>
+					<mx:Image x="174" y="10" source="images/find.png"/>
+					<mx:Button x="515" y="96" label="Filtar" icon="@Embed('../images/ok.png')" click="{listaReservas()}"/>
+					<mx:Button x="402" y="96" label="Limpar" icon="@Embed('../images/limpar.png')" click="{limpa()}"/>
+					<mx:CheckBox x="395" y="40" label="Reservadas" selected="true" id="flag1"/>
+					<mx:CheckBox x="395" y="70" label="Hospedadas" id="flag2"/>
+					<mx:CheckBox x="495" y="40" label="Canceladas" id="flag3"/>
+					<mx:CheckBox x="495" y="70" label="Finalizadas" id="flag4"/>
+				</mx:Panel>
+			</mx:AddChild>
+			<mx:SetEventHandler target="{mostrarFiltro}" name="click" handler="{ocultaFiltro()}"/>
+			<mx:SetProperty target="{mostrarFiltro}" name="label" value="Ocultar Filtro"/>
+			<mx:SetProperty target="{hbox1}" name="width" value="632"/>
+			<mx:SetProperty target="{hbox1}" name="height" value="32"/>
+			<mx:SetStyle target="{button2}" name="icon" value="@Embed('../images/add.png')"/>
+			<mx:SetProperty name="height" value="628"/>
+			<mx:SetProperty target="{pDados}" name="y" value="442"/>
+			<mx:SetStyle target="{txtCodigo}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtCliente}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtData}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtStatus}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtDtHosp2}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtDtHosp1}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtDtRes2}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetStyle target="{txtDtRes1}" name="backgroundColor" value="#e7fefe"/>
+			<mx:SetProperty target="{label1}" name="y" value="427"/>
+			<mx:SetProperty target="{textinput1}" name="x" value="75"/>
+			<mx:SetProperty target="{textinput1}" name="y" value="430"/>
+			<mx:SetProperty target="{label0}" name="y" value="427"/>
+			<mx:SetProperty target="{textinput0}" name="y" value="430"/>
+			<mx:SetProperty target="{textinput3}" name="y" value="430"/>
+			<mx:SetProperty target="{label3}" name="y" value="427"/>
+			<mx:SetProperty target="{textinput2}" name="y" value="430"/>
+			<mx:SetProperty target="{label2}" name="y" value="427"/>
+			<mx:SetProperty target="{button3}" name="enabled" value="false"/>
+			<mx:SetProperty target="{button3}" name="enabled" value="false"/>
+			<mx:SetProperty target="{button3}" name="enabled" value="false"/>
+			<mx:SetProperty target="{button3}" name="enabled" value="true"/>
+		</mx:State>
+	</mx:states>
+	<mx:WipeLeft id="myWL"/>
+	<mx:TabNavigator x="6" y="36" width="622" height="206" id="tabnavigator1" borderStyle="none">
+		<mx:VBox showEffect="{myWL}" label="Reservas" width="100%" height="100%">
+			<cp:DataGridColor id="dgReservas" width="100%" height="100%"
+				change="{carregaDados()}"
+				dataProvider="{dpGridReservas}"
+				rowColorFunction="defineCor">
+				<cp:columns>
+					<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+					<mx:DataGridColumn headerText="Data Reserva" dataField="dtreserva" width="100"/>
+					<mx:DataGridColumn headerText="Cod" dataField="cliente" width="35"/>
+					<mx:DataGridColumn headerText="Cliente" dataField="nome"/>
+					<mx:DataGridColumn headerText="Inicio" dataField="dtprevent" width="100"/>
+					<mx:DataGridColumn headerText="Fim" dataField="dtprevsai" width="100"/>
+					<mx:DataGridColumn headerText="Status" dataField="flag" width="50"/>
+				</cp:columns>
+			</cp:DataGridColor>
+		</mx:VBox>
+		<mx:VBox showEffect="{myWL}" label="Quartos Reserva" width="100%" height="100%" borderStyle="none" 
+			 show="{listarQuartos()}">
+			<mx:DataGrid width="100%" height="100%" dataProvider="{dpGridQuartos}">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Código" dataField="quarto" width="60"/>
+					<mx:DataGridColumn headerText="Descrição" dataField="descricao" />
+					<mx:DataGridColumn headerText="Valor" dataField="valor" width="100"/>
+				</mx:columns>
+			</mx:DataGrid>
+		</mx:VBox>
+	</mx:TabNavigator>
+	<mx:HBox x="0" y="2" width="100%" id="hbox1" height="30">
+		<mx:Button label="Nova" id="button2" icon="@Embed('../images/add.png')" click="{criarReserva()}"/>
+		<mx:Button label="Cancelar" icon="@Embed('../images/cancel.png')" click="{ cancelarReserva() }"/>
+		<mx:Button label="Hospedar" icon="@Embed('../images/hospedar.png')" id="button3" click="{abrirHospedar()}"/>
+		<mx:Button label="Finalizar" icon="@Embed('../images/finalizar.png')" id="button4" enabled="false"/>
+		<mx:Button label="Exibir Filtro" id="mostrarFiltro" click="{mostraFiltro()}" icon="@Embed('../images/Filtrar.png')"/>
+	</mx:HBox>
+	<mx:Panel x="0" y="270" width="100%" height="106" layout="absolute" title="Dados da Reserva Selecionada" id="pDados" borderStyle="none">
+		<mx:Label x="10" y="10" text="Código"/>
+		<mx:Label x="117" y="10" text="Cliente"/>
+		<mx:Label x="376" y="10" text="Data"/>
+		<mx:TextInput x="62" y="8" width="48" editable="false" id="txtCodigo" backgroundColor="#e7fefe"/>
+		<mx:Label x="10" y="40" text="Reservado de:"/>
+		<mx:TextInput x="102" y="38" width="84" editable="false" id="txtDtRes1" backgroundColor="#e7fefe"/>
+		<mx:TextInput x="204" y="38" width="84" editable="false" id="txtDtRes2" backgroundColor="#e7fefe"/>
+		<mx:Label x="317" y="40" text="Hospedado de:"/>
+		<mx:TextInput x="416" y="38" width="84" editable="false" id="txtDtHosp1" backgroundColor="#e7fefe"/>
+		<mx:TextInput x="518" y="38" width="84" editable="false" id="txtDtHosp2" backgroundColor="#e7fefe"/>
+		<mx:TextInput x="552" y="8" width="50" editable="false" id="txtStatus" backgroundColor="#e7fefe"/>
+		<mx:Label x="504" y="10" text="Status"/>
+		<mx:Label x="504" y="40" text="a" width="13"/>
+		<mx:TextInput x="163" y="8" width="205" editable="false" id="txtCliente" backgroundColor="#e7fefe"/>
+		<mx:TextInput x="415" y="8" width="84" editable="false" id="txtData" backgroundColor="#e7fefe"/>
+		<mx:Label x="190" y="40" text="a" width="13"/>
+	</mx:Panel>
+	<mx:Label x="8" y="248" text="Reservado" id="label1"/>
+	<mx:TextInput x="73" y="251" height="12" width="52" id="textinput1" borderStyle="none" backgroundColor="#e4fcbe" editable="false" enabled="false"/>
+	<mx:Label x="130" y="248" text="Hospedada" id="label0"/>
+	<mx:TextInput x="201" y="251" height="12" width="52" id="textinput0" borderStyle="none" backgroundColor="#ffffcc" editable="false" enabled="false"/>
+	<mx:Label x="260" y="248" text="Finalizada" id="label2"/>
+	<mx:TextInput x="331" y="251" height="12" width="52" id="textinput2" borderStyle="none" backgroundColor="#e6ffff" editable="false" enabled="false"/>
+	<mx:Label x="390" y="248" text="Cancelada" id="label3"/>
+	<mx:TextInput x="461" y="251" height="12" width="52" id="textinput3" borderStyle="none" backgroundColor="#ffd3d2" editable="false" enabled="false"/>
+	<mx:ControlBar horizontalAlign="right">
+		<mx:Button label="Sair" icon="@Embed('../images/close.png')" click="{PopUpManager.removePopUp(this)}"/>
+	</mx:ControlBar>
+</mx:TitleWindow>
