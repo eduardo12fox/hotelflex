@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="396" height="266" title="Hospedagem" 
+	close="{PopUpManager.removePopUp(this)}">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.core.Application;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import components.reservas;
+			
+			public static const Ok : String = "teste";
+			
+			[Bindable]
+			var numReserva : String;
+			[Bindable]
+			var datReserva : String;
+			[Bindable]
+			var iniReserva : String;
+			[Bindable]
+			var fimReserva : String;
+			[Bindable]
+			var nomCliente : String;
+			[Bindable]
+			var numCliente : String;
+			[Bindable]
+			var iniHosp : String;
+			
+			public function getParametersSave():Object{
+				var flg : String;
+				var dtinihosp : String;
+				
+				if ( dtEntrada.visible == true ){ 
+					flg = "H";
+					dtinihosp = dtEntrada.text;	
+				} else {
+					flg = "F";
+					dtinihosp = dtHospEnt.text;
+				}
+				return {
+					"reserva.codigo"    : codigo.text,
+					"reserva.dtreserva" : dtReserva.text,
+					"reserva.cliente"   : numCliente,
+					"reserva.dtentrada" : dtinihosp,
+					"reserva.dtsaida"   : dtSaida.text,
+					"reserva.dtprevent" : dtEnt.text,
+					"reserva.dtprevsai" : dtSai.text,
+					"reserva.flag"      : flg
+				}
+			}
+			
+			public function confirmar():void{
+				if (dtEntrada.visible == true){
+					var valido1 : ValidationResultEvent = validadorEnt.validate();
+					if (valido1.type != ValidationResultEvent.VALID){
+						dtEntrada.setFocus();
+					} else {
+						saveReserva.send( getParametersSave() );
+						
+					}
+				} else {
+					var valido2 : ValidationResultEvent = validadorSai.validate();
+					if (valido2.type != ValidationResultEvent.VALID){
+						dtSai.setFocus();
+					} else {
+						saveReserva.send( getParametersSave() );
+					}
+				}
+					
+			}
+			
+			public function resultSaveReserva(event : ResultEvent): void{
+				Alert.show( String (event.result) );
+				dispatchEvent(new Event(hospedar.Ok));
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</mx:Script>
+
+	<mx:HTTPService
+		id="saveReserva"
+		url="http://{Application.application.Servidor}/hotel/flex/freserva!save.action"
+		result="resultSaveReserva(event)"
+		method="POST"
+	/>	
+	
+	<mx:DateValidator id="validadorEnt" source="{dtEntrada}" required="true" inputFormat="DD/MM/YY" property="text"
+		requiredFieldError="Data de início da reserva não pode ser vazia."
+		invalidCharError="Caracteres inválidos na data."
+		formatError="Formato inválido."
+	/>
+	
+	<mx:DateValidator id="validadorSai" source="{dtSaida}" required="true" inputFormat="DD/MM/YY" property="text"
+		requiredFieldError="Data do fim da reserva não pode ser vazia."
+		invalidCharError="Caracteres inválidos na data."
+		formatError="Formato inválido."
+	/>
+	
+	<mx:Label x="10" y="157" text="Entrada"/>
+	<mx:Label x="236" y="159" text="Saída" id="lblSaida"/>
+	<mx:DateField x="65" y="157" editable="true" yearNavigationEnabled="true"
+		toolTip="Data de inicio da Hospedagem"
+		formatString="DD/MM/YY"
+		dayNames="['D','S','T','Q','Q','S','S']"
+		monthNames="['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']"	
+	 	id="dtEntrada"/>
+	<mx:DateField x="276" y="157" editable="true" yearNavigationEnabled="true"
+		toolTip="Data do fim da Hospedagem"
+		formatString="DD/MM/YY"
+		dayNames="['D','S','T','Q','Q','S','S']"
+		monthNames="['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']"	
+		id="dtSaida"/>
+	<mx:Button id="btnConfirmar" x="263" y="193" label="Confirmar" icon="@Embed('../images/ok.png')" click="{confirmar()}"/>
+	<mx:Button id="btnCancelar" x="10" y="193" label="Cancelar" icon="@Embed('../images/cancel.png')" 
+		toolTip="Cancela operação."
+		click="{PopUpManager.removePopUp(this)}"/>
+	<mx:Label x="10" y="31" text="Reserva"/>
+	<mx:Label x="10" y="5" text="Dados da Reserva" fontWeight="bold"/>
+	<mx:Label x="10" y="61" text="Cliente"/>
+	<mx:Label x="191" y="31" text="Dt. Reserva"/>
+	<mx:Label x="10" y="91" text="Periodo Reservado "/>
+	<mx:Label x="10" y="127" text="Dados da Hospedagem" fontWeight="bold"/>
+	<mx:Label x="244" y="91" text="a"/>
+	<mx:TextInput x="62" y="29" width="40" id="codigo" backgroundColor="#e7fefe" editable="false" text="{numReserva}"/>
+	<mx:TextInput x="262" y="29" width="104" id="dtReserva" backgroundColor="#e7fefe" editable="false" text="{datReserva}"/>
+	<mx:TextInput x="139.5" y="89" width="97" id="dtEnt" backgroundColor="#e7fefe" editable="false" text="{iniReserva}"/>
+	<mx:TextInput x="262" y="89" width="104" id="dtSai" backgroundColor="#e7fefe" editable="false" text="{fimReserva}"/>
+	<mx:TextInput x="62" y="59" width="304" backgroundColor="#e7fefe" editable="false" text="{nomCliente}"/>
+	<mx:HRule x="10" y="117" width="356"/>
+	<mx:DateFormatter id="df" formatString="DD/MM/YY"/>
+	<mx:TextInput x="65" y="157" width="80" id="dtHospEnt" backgroundColor="#e7fefe" visible="false" text="{iniHosp}" editable="false"/>
+</mx:TitleWindow>

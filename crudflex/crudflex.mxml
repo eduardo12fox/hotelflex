@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application backgroundImage="images/background.jpg" creationComplete="{fazerLogin()}" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" height="700" width="1000"
+	preloader="DownloadProgressBarBR"
+	xmlns:util="components.*"
+	>
+
+<mx:Script>
+	<![CDATA[
+		import mx.collections.ArrayCollection;
+		import mx.rpc.events.ResultEvent;
+		import components.reservas;
+		import components.tipoQuarto;
+		import components.usuarios;
+        import flash.display.StageDisplayState;
+        import DownloadProgressBarBR;
+
+		[Bindable]
+		public var rCodCli : String;
+		[Bindable]
+		public var rNomCli : String;
+
+		[Bindable]
+		public var rCodCli1 : String;
+		[Bindable]
+		public var rNomCli1 : String;
+
+		[Bindable]
+		public var rCodQua : String;
+		[Bindable]
+		public var rNomQua : String;
+		[Bindable]
+		public var hora : String;
+		
+		[Bindable]
+		//public var Servidor : String = "www.flexdev.com.br";
+		public var Servidor : String = "localhost:8080";
+
+		public function iconMoveDown(id:Image):void{
+			id.x = id.x+2;
+			id.y = id.y+2;
+		}
+	
+		public function iconMoveUp(id:Image):void{
+			id.x = id.x-2;
+			id.y = id.y-2;
+		}
+
+		public function iconMD(id:Image):void{
+			id.y = id.y+2;
+		}
+
+		public function iconMU(id:Image):void{
+			id.y = id.y-2;
+		}
+	]]>
+</mx:Script>
+
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.events.CloseEvent;
+			import components.clientes;
+			import components.quartos;
+			import components.login;
+			import mx.effects.easing.Bounce;
+			import mx.effects.Move;
+			import flash.utils.Timer;
+		    import flash.events.TimerEvent;
+		    import flash.display.Sprite;
+		    import mx.controls.Alert;
+			
+			private var timer:Timer = null;
+			
+			//Função para abrir a tela de Cadastro de tipos de Quartos.
+			public function abrirTipo():void{
+				var tipo : tipoQuarto = tipoQuarto(PopUpManager.createPopUp(this, components.tipoQuarto , true));
+				PopUpManager.centerPopUp(tipo);
+				popUpEffect.target = tipo;
+				popUpEffect.play();
+			}
+			
+			//Função para abrir a tela de Manuntenção de Reservas.
+			public function abrirReservas():void{			
+				var reserva : reservas = reservas(PopUpManager.createPopUp(this, components.reservas , true));
+				popUpEffect.target = reserva;
+				popUpEffect.play();
+			}			
+			
+			public function abrirCli():void{
+				var cliente : clientes = clientes(PopUpManager.createPopUp(this, components.clientes , true));
+				PopUpManager.centerPopUp(cliente);
+				popUpEffect.target=cliente;
+				popUpEffect.play();
+			}
+			public function fazerLogin():void{
+				initTimer();
+				var logar : login = login(PopUpManager.createPopUp(this, components.login , true));
+				logar.usuario.setFocus();
+				PopUpManager.centerPopUp(logar) ;
+				loginEffect.target=logar;
+				loginEffect.play();
+			}
+			public function abrirQuar():void{
+				var quarto : quartos = quartos(PopUpManager.createPopUp(this, components.quartos , true));
+				PopUpManager.centerPopUp(quarto) ;
+				popUpEffect.target=quarto;
+				popUpEffect.play();
+			}
+			public function abrirUsu():void{
+				var usuario : usuarios = usuarios(PopUpManager.createPopUp(this, components.usuarios , true));
+				PopUpManager.centerPopUp(usuario);
+				popUpEffect.target = usuario;
+				popUpEffect.play();
+			}
+			public function abreHelp():void{
+				navigateToURL(new URLRequest("help.html"), "_blank");
+			}
+			public function sair():void{
+				fazerLogin();
+			}
+			public function Data():void{
+				df.format( new Date().getTime() );
+			}
+			public function initTimer():void{
+				this.timer = new Timer( 1000 * 1 );
+				timer.addEventListener("timer", incrementa);
+				timer.start();
+			}
+			public function incrementa(event:TimerEvent):void{
+				hora = hf.format( new Date() );
+			}
+		]]>
+	</mx:Script>
+<util:MemMonitor id="memMonitor" y="63" right="16" width="119"/>
+<mx:DateFormatter id="df" formatString="DD/MM/YYYY"/>
+<mx:DateFormatter id="hf" formatString="JJ:NN:SS"/>
+
+<mx:String id="dispState" />
+
+<mx:Parallel id="loginEffect">
+<mx:Fade alphaFrom="0" alphaTo="1"/>
+<mx:WipeDown moveEasingFunction="Bounce.easeOut" duration="800"/>
+<mx:Sequence>
+    <mx:Blur duration="300" blurYFrom="1.0" blurYTo="20.0" />            
+    <mx:Blur duration="300" blurYFrom="20.0" blurYTo="1" />            
+</mx:Sequence>
+</mx:Parallel>
+
+<mx:Parallel id="popUpEffect">
+<mx:Fade alphaFrom="0" alphaTo="1"/>
+<mx:WipeDown moveEasingFunction="Bounce.easeOut" duration="900"/>
+</mx:Parallel>
+	
+	<mx:Image id="iconeclientes" x="10" y="63" toolTip="Manutenção de Clientes" 
+		buttonMode="true" click="{abrirCli()}" 
+		mouseOver="{iconMoveDown(iconeclientes)}" 
+		mouseOut="{iconMoveUp(iconeclientes)}"
+		mouseDown="{iconMD(iconeclientes)}" 
+		mouseUp="{iconMU(iconeclientes)}" source="images/clientes.png"/>
+	<mx:Image x="10" y="155" id="iconeusuarios" click="{abrirUsu()}" toolTip="Manutenção de Usuários"
+		mouseOver="{iconMoveDown(iconeusuarios)}" 
+		mouseOut="{iconMoveUp(iconeusuarios)}"
+		mouseDown="{iconMD(iconeusuarios)}" 
+		mouseUp="{iconMU(iconeusuarios)}" source="images/usuarios.png"/>
+	<mx:Image x="10" y="260" id="iconereservas" click="{abrirReservas()}" toolTip="Manutenção de Reservas"
+		mouseOver="{iconMoveDown(iconereservas)}" 
+		mouseOut="{iconMoveUp(iconereservas)}"
+		mouseDown="{iconMD(iconereservas)}" 
+		mouseUp="{iconMU(iconereservas)}" source="images/imgreservas.png"/>
+	<mx:Image x="10" y="349" id="iconquartos" click="{abrirQuar()}" toolTip="Manutenção de Quartos"
+		mouseOver="{iconMoveDown(iconquartos)}" 
+		mouseOut="{iconMoveUp(iconquartos)}"
+		mouseDown="{iconMD(iconquartos)}" 
+		mouseUp="{iconMU(iconquartos)}" source="images/quartos.png"/>
+	<mx:Image x="10" y="434" id="icontipo" source="images/tipos.png" click="{abrirTipo()}" toolTip="Manutenção de Tipos de Quartos"
+		mouseOver="{iconMoveDown(icontipo)}" 
+		mouseOut="{iconMoveUp(icontipo)}"
+		mouseDown="{iconMD(icontipo)}" 
+		mouseUp="{iconMU(icontipo)}"/>
+	<mx:ApplicationControlBar x="10" y="20" width="980">
+		<mx:Label text="Controle de Reservas" fontSize="15" fontWeight="bold" width="100%" color="#ffffff"/>
+		<mx:Label text="Usuário Logado" color="#ffffff"/>
+		<mx:Label text="User" id="usuarioLogado"/>
+		<mx:Label text="Data do Sistema" color="#ffffff"/>
+		<mx:Label text="{ df.format( new Date() ) }"/>
+		<mx:Label text="Hora do Sistema" color="#ffffff"/>
+		<mx:Label id="txthora" text="{ hora }"/>
+	</mx:ApplicationControlBar>
+	<mx:Image toolTip="Logout do Sistema"
+		click="{sair()}"
+		mouseOver="{iconMoveDown(iconSair)}" 
+		mouseOut="{iconMoveUp(iconSair)}"
+		mouseDown="{iconMD(iconSair)}" 
+		mouseUp="{iconMU(iconSair)}" id="iconSair" source="images/logout.png" x="934" y="570"/>
+	<mx:Image id="iconHelp" x="10" y="556" click="{abreHelp()}" visible="false"
+		mouseOver="{iconMoveDown(iconHelp)}" 
+		mouseOut="{iconMoveUp(iconHelp)}"
+		mouseDown="{iconMD(iconHelp)}" 
+		mouseUp="{iconMU(iconHelp)}"		
+		source="images/ajuda.png"/>
+</mx:Application>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fc="com.adobe.flex.extras.controls.*" creationComplete="{init()}" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" title="Clientes" width="484" height="548">
+<mx:Script>
+    <![CDATA[
+      import mx.collections.XMLListCollection;
+      import mx.controls.Alert;
+      import mx.rpc.events.ResultEvent;
+      import mx.rpc.events.FaultEvent;
+      import mx.utils.ObjectUtil;
+      import mx.rpc.http.HTTPService;
+      import mx.collections.ArrayCollection;
+	  import mx.managers.PopUpManager;
+	  import mx.events.CloseEvent; 
+	  import mx.events.ValidationResultEvent;    
+	  import mx.core.Application; 
+	  import mx.utils.ArrayUtil;       
+
+      private var Result:ValidationResultEvent;
+      
+      [Bindable]
+      private var dpGrid : ArrayCollection;	  
+      public function hrdpGrid(event:ResultEvent):void{
+      	dpGrid = event.result.list.Cliente;
+      }
+	  
+	  public function validar():Boolean{
+		Result = vt1.validate();
+	  	var criticas : String;
+	  	if (nome.text==""){
+	  		criticas = "Nome Requerido!";
+	  	}
+	  	if (Result.type==ValidationResultEvent.INVALID) {
+	  		if ( criticas != null){
+		  		criticas = criticas + "\n" + "Telefone Requerido!";
+		  	}else{
+		  		criticas = "Telefone Requerido!"; 
+		  	}
+	  	}
+	  	
+	  	if (criticas != null){
+	  		Alert.show(criticas);
+	  		return false;
+	  	}
+	  	return true;
+	  }
+	  
+	  public function init():void{
+	  	listaClientes();
+	  }     
+      
+      public function cancelaOper():void{
+      	limpaCampos();
+      	habilitaEdic(false);
+      	desabilitaAlter();
+      	carregaDados();
+      }
+      
+      public function alterar():void{
+      	if (dg.selectedIndex == -1)
+      		Alert.show("Selecione um Registro!");
+      	else{
+      		habilitaEdic(true);
+      		habilitaAlter();
+      		nome.setFocus();
+      	}
+      }
+      
+      public function habilitaEdic(hab:Boolean):void{ 
+        nome.enabled = hab;
+        cpfcnpj.enabled = hab;
+        logradouro.enabled = hab;
+        cidade.enabled = hab;
+        empresa.enabled = hab;
+        tel1.enabled = hab;
+        tel2.enabled = hab;
+      }
+      
+      public function criaNovo():void{
+      	limpaCampos();
+      	habilitaEdic(true);
+      	nome.setFocus();
+      	habilitaAlter();
+      }
+      
+      public function habilitaAlter():void{
+      	btnNovo.enabled = false;
+      	btnAlterar.enabled = false;
+      	btnFechar.enabled = false;
+      	pdg.enabled = false;
+      	btnSalvar.enabled = true;
+      	btnCancelar.enabled = true;
+      }
+      
+      public function desabilitaAlter():void{
+      	btnNovo.enabled = true;
+      	btnAlterar.enabled = true;
+      	btnFechar.enabled = true;
+       	pdg.enabled = true;
+       	btnSalvar.enabled = false;
+      	btnCancelar.enabled = false;
+      }
+ 
+ 	  public function limpaCampos():void{
+ 	  	codigo.text = "";
+        nome.text = "";
+        cpfcnpj.text = "";
+        logradouro.text = "";
+        cidade.text = "";
+        empresa.text = "";
+        tel1.text = "";
+        tel2.text = ""; 
+ 	  }
+ 	        
+       public function getParameters():Object {
+              return {
+                "cliente.codigo": codigo.text, 
+                "cliente.nome" : nome.text,
+                "cliente.cpfcnpj": cpfcnpj.text, 
+                "cliente.logradouro": logradouro.text, 
+                "cliente.cidade": cidade.text, 
+                "cliente.empresa": empresa.text, 
+                "cliente.tel1": tel1.text, 
+                "cliente.tel2": tel2.text
+              };
+            }
+      
+      public function incluirCliente(): void {
+      	if (validar()){                          
+        	userRequest.send( this.getParameters() );  
+		}
+      }
+      
+      public function clienteGravado(event:ResultEvent):void{
+      	Alert.show( String (event.result) );
+        limpaCampos();
+        desabilitaAlter();
+        habilitaEdic(false);
+        listaClientes();
+      }
+
+	  public function carregaDados():void{
+ 	  	codigo.text = dg.selectedItem.codigo;
+        nome.text = dg.selectedItem.nome;
+        (dg.selectedItem.cpfcnpj!=null) ? cpfcnpj.text = dg.selectedItem.cpfcnpj : cpfcnpj.text = "";
+        logradouro.text = dg.selectedItem.logradouro;
+        cidade.text = dg.selectedItem.cidade;
+        empresa.text = dg.selectedItem.empresa;
+        (dg.selectedItem.tel1 != null) ? tel1.text = dg.selectedItem.tel1 : tel1.text = "";
+        (dg.selectedItem.tel2 != null) ? tel2.text = dg.selectedItem.tel2 : tel2.text = "";	
+	  }
+
+      public function listaClientes():void {
+      	listClientes.send();
+      }
+      
+      public function onErro(event:FaultEvent):void{
+      	Alert.show( ObjectUtil.toString(event.fault));
+      }
+    ]]>
+    
+  </mx:Script>
+
+	<mx:HTTPService 
+	id="userRequest" 
+	url="http://{Application.application.Servidor}/hotel/flex/fcliente!save.action" 
+	result="clienteGravado(event)"	
+	method="POST"/>
+	
+	<mx:HTTPService 
+	id="listClientes" 
+	url="http://{Application.application.Servidor}/hotel/flex/fcliente!list.action"
+	result="hrdpGrid(event)"
+	fault="onErro(event)"
+	useProxy="false"
+	showBusyCursor="true"
+	/>
+
+	<mx:PhoneNumberValidator id="vt1" source="{tel1}" property="text" 
+    	trigger="{tel1}" triggerEvent="focusOut" required="true"
+        invalidCharError="Telefone Inválido!" wrongLengthError="Telefone deve conter no mínimo 10 digitos! Ex: 43-3534-4804"/>
+	<mx:PhoneNumberValidator source="{tel2}" property="text" 
+    	trigger="{tel1}" triggerEvent="focusOut" required="false"
+        wrongLengthError="Telefone deve conter no mínimo 10 digitos! Ex: 43-3534-4804"/>
+	<mx:Label x="10" y="10" text="Código"/>
+	<mx:Label x="10" y="40" text="Nome"/>
+	<mx:Label x="264" y="128" text="CPF "/>
+	<mx:Label x="10" y="68" text="Logradouro"/>
+	<mx:Label x="10" y="98" text="Cidade"/>
+	<mx:Label x="10" y="128" text="Empresa"/>
+	<mx:Label x="10" y="158" text="Telefone"/>
+	<mx:Label x="264" y="158" text="Celular"/>
+	<mx:TextInput x="84" y="8" width="53" id="codigo" tabIndex="1" enabled="false"/>
+	<mx:TextInput x="84" y="38" maxChars="40" id="nome" width="368" tabIndex="2" enabled="false"/>
+	<fc:MaskedTextInput id="cpfcnpj" inputMask="#########-##" x="326" y="126" width="126" tabIndex="6" 
+		enabled="false" required="false"/>
+	<mx:TextInput x="84" y="66" width="368" id="logradouro" tabIndex="3" enabled="false" maxChars="40"/>
+	<mx:TextInput x="84" y="96" width="368" id="cidade" tabIndex="4" enabled="false" maxChars="40"/>
+	<mx:TextInput x="84" y="126" id="empresa" tabIndex="5" enabled="false" width="147" maxChars="20"/>
+	<fc:MaskedTextInput x="84" y="156" width="112" id="tel1" tabIndex="7" enabled="false" 
+		inputMask="##-####-####" required="true" autoAdvance="true" defaultCharacter=""/>
+	<fc:MaskedTextInput x="326" y="156" width="126" id="tel2" tabIndex="8" enabled="false" 
+		inputMask="##-####-####" autoAdvance="true" defaultCharacter="" required="false"/>
+	
+	<mx:Panel id="pdg" x="0" y="184" layout="absolute" title="Clientes Cadastrados" height="276" width="464">
+		<mx:DataGrid dataProvider="{dpGrid}" 
+			change="{carregaDados()}" doubleClickEnabled="true" doubleClick="{alterar()}"
+			id="dg" x="0" y="0" width="442" height="236">
+			<mx:columns>
+				<mx:DataGridColumn width="50" headerText="Código" dataField="codigo"/>
+				<mx:DataGridColumn headerText="Nome" dataField="nome"/>
+				<mx:DataGridColumn width="100" headerText="Telefone" dataField="tel1"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="tel2"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="cpfcnpj"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="logradouro"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="cidade"/>
+				<mx:DataGridColumn visible="false" width="0" dataField="empresa"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Panel>
+	<mx:Image x="204" y="160" source="images/alert.png" id="errPh1" visible="false" toolTip="Telefone Inválido!!!"/>
+	<mx:ControlBar height="56" y="506">
+		<mx:Button label="Novo" id="btnNovo" click="{criaNovo()}" icon="@Embed('../images/add.png')" toolTip="Inclui um novo cliente."/>
+		<mx:Button label="Alterar" id="btnAlterar" click="{alterar()}" icon="@Embed('../images/alter.png')" toolTip="Edita o cadastro selecionado."/>
+		<mx:Button label="Salvar" click="incluirCliente()" enabled="false" id="btnSalvar" icon="@Embed('../images/ok.png')" toolTip="Grava as informações."/>
+		<mx:Button label="Cancelar" enabled="false" id="btnCancelar" click="{cancelaOper()}" icon="@Embed('../images/cancel.png')" toolTip="Cancela a operação."/>
+		<mx:Button label="Fechar" id="btnFechar" click="{PopUpManager.removePopUp(this)}" icon="@Embed('../images/close.png')" toolTip="Fecha o cadastro de clientes."/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>

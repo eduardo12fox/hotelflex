@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Por: Rodrigo Fraga -->
+
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100" height="100"
+	initialize="doInit();">
+	<mx:Script>
+		<![CDATA[
+			import flash.utils.Timer;
+		    import flash.events.TimerEvent;
+		    import flash.display.*;
+
+			//Local model
+			private var peakMem:int;
+			private var memHistory:Array;
+			private var historyPoints:uint = 100;
+			private var updateMS:uint = 1000;
+			
+	        private function doInit():void {
+	        	this.peakMem = System.totalMemory;
+	        	//Fill out memHistory with zeros (to keep consistent size)
+	        	memHistory = new Array();
+	        	for(var i:int=0; i<historyPoints; i++){
+	        		memHistory[i] = 0;
+	        	}
+	        	//Set initial value
+	        	updateDisplay();
+	        	
+	        	//Set to update
+	            var myTimer:Timer = new Timer(updateMS);
+	            myTimer.addEventListener("timer", timerHandler);
+	            myTimer.start();
+	        }
+	
+	        private function timerHandler(event:TimerEvent):void {
+				updateDisplay();
+	        }
+			private function updateDisplay():void{
+				var curMem:int = System.totalMemory;
+				if(curMem > this.peakMem){
+		        	this.peakMem = curMem;
+	        	}
+	        	memHistory.shift();
+	        	memHistory.push(curMem);
+				//Update text
+	        	txtMem.text = 'Uso da Memória:\nCurve: '+ byteConvert(curMem) + '\nTop: ' + byteConvert(this.peakMem);
+				//Draw graph	
+				drawGraph();
+			}
+			
+			private function drawGraph():void{
+				var i:int;
+				var percentY:Number = 100*this.memHistory[1]/this.peakMem;
+				
+				//Clear last graph
+				this.graphics.clear();
+				
+				
+				this.graphics.moveTo(0,100-percentY);
+				this.graphics.lineStyle(2, 0xff0000,0.5);
+				for(i=0;i<this.memHistory.length;i++){
+					percentY = 100*this.memHistory[i]/this.peakMem;
+					this.graphics.lineTo(i,100-percentY);
+				}
+			}
+			
+			private function byteConvert(num:int):String {
+				var result:Number = 0;
+				var unit:String = "";
+				var unitValue:int = 0;
+				// Set unit variables for convenience
+				var bytes:int = 1;
+				var KB:int = 1024;
+				var MB:int = 1048576;
+				var GB:int = 1073741824;
+			
+				// Check for non-numeric or negative num argument
+				if (num < 0)
+					return "Negative numbers not supported";
+				
+				// Set unit depending on the size of num
+			 	if      (num < KB) {
+			 		unit ="bytes";
+			 		unitValue = bytes;					
+				} else if (num < MB) {
+					unit ="KB";
+			 		unitValue = KB;					
+				} else if (num < GB) {
+					unit ="MB";
+			 		unitValue = MB;									
+				} else  {	
+					unit ="GB";
+			 		unitValue = GB;					
+				}		
+				
+				// Find the result by dividing num by the number represented by the unit
+				result = num / unitValue;
+				
+				// Format the result
+				if (result < 10)
+				{
+					result = Math.round(result * 100) / 100;
+				} else if (result < 100) {
+					result = Math.round(result * 10) / 10;
+				} else {
+					result = Math.round(result);
+				}
+				// Concatenate result and unit together for the return value
+				return result.toString() + " " + unit;
+			}
+		]]>
+	</mx:Script>
+	<mx:Text id="txtMem" color="white" />
+</mx:Canvas>
+

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow creationComplete="{txtPesquisar.setFocus()}" showCloseButton="false" close="{PopUpManager.removePopUp(this)}" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="638" height="380" title="Pesquisa de Clientes" backgroundAlpha="1.0">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			import mx.core.Application; 
+			import mx.utils.ObjectUtil;
+			import mx.controls.Alert;
+			import components.reservas;
+			import components.clientes;
+			import mx.effects.easing.Bounce;
+			
+			public var sFlag : String = "0";		
+			[Bindable]
+		    private var dpGrid : Object;	  
+		    [Bindable]
+		    public var codcli : String;
+		    [Bindable]
+		    public var nomecli : String;
+		    
+		    public function abrirCli():void{
+				var cliente : clientes = clientes(PopUpManager.createPopUp(this, components.clientes , true));
+				PopUpManager.centerPopUp(cliente);
+				popUpEffect.target=cliente;
+				popUpEffect.play();
+			}
+		    
+		    public function hrdpGrid(event:ResultEvent):void{
+				try{
+			    	dpGrid = event.result.list.Cliente;
+			    	txtPesquisar.setStyle("backgroundColor","");
+			    	contCli.text = dg.dataProvider.length;
+			 	} catch (e : Error){
+			 		dpGrid = null;
+			 		txtPesquisar.setStyle("backgroundColor","#ff9191");
+			 		contCli.text = "0";
+			 }
+		    }		
+		
+			public function getParameters():Object {
+            	return {
+            		"valor" : txtPesquisar.text,
+            		"campo" : rbNome.selected ? rbNome.value : rbCpf.value
+              };
+            }
+      
+	      public function pesquisar(): void {
+	        	listClientes.send( this.getParameters() );  
+	      }
+	      
+		  public function erro(event:FaultEvent):void{
+			Alert.show( ObjectUtil.toString(event.fault));
+			contCli.text = "0";
+	      }	    	      
+	      
+	      public function enviar():void{
+	      	Application.application
+	      }
+	      
+	      public function sair():void{
+	      	if (sFlag=="1"){
+		      	Application.application.rCodCli = dg.selectedItem.codigo;
+		      	Application.application.rNomCli = dg.selectedItem.nome;
+	      	} else if (sFlag=="2"){
+		      	Application.application.rCodCli1 = dg.selectedItem.codigo;
+		      	Application.application.rNomCli1 = dg.selectedItem.nome;	      		
+	      	}
+	      	sFlag = "0";
+	      	PopUpManager.removePopUp(this);
+	      }
+	      
+		]]>
+	</mx:Script>
+
+	<mx:HTTPService
+		id="listClientes"
+		url="http://{Application.application.Servidor}/hotel/flex/fcliente!getClienteByCampo.action"
+		result="hrdpGrid(event)"
+		fault="erro(event)"
+		showBusyCursor="true"
+		method="POST"
+	/>
+	
+	<mx:Parallel id="popUpEffect">
+	<mx:Fade alphaFrom="0" alphaTo="1"/>
+	<mx:WipeDown moveEasingFunction="Bounce.easeOut" duration="900"/>
+	</mx:Parallel>	
+
+	<mx:HBox x="0" y="0" width="100%" height="41" verticalAlign="middle">
+		<mx:Label text="Pesquisar"/>
+		<mx:TextInput width="311" id="txtPesquisar" keyDown="{if (event.keyCode == 13 ) {btnBuscar.setFocus()}}"/>
+		<mx:Button label="Buscar" icon="@Embed('../images/ok.png')" id="btnBuscar" click="{pesquisar()}"
+			keyDown="{ if (event.keyCode == 13) { pesquisar()}}"/>
+		<mx:RadioButtonGroup id="rgpesq"/>
+		<mx:RadioButton value="nome" label="Nome" groupName="rgpesq" selected="true" id="rbNome"/>
+		<mx:RadioButton value="cpfcnpj" label="CPF" groupName="rgpesq" id="rbCpf"/>
+	</mx:HBox>
+	<mx:HBox x="0" y="49" width="100%" height="100%">
+		<mx:DataGrid width="100%" height="100%" id="dg" dataProvider="{dpGrid}" doubleClick="{sair()}" doubleClickEnabled="true" 
+				toolTip="Para selecionar o cliente, de um duplo clique sobre ele.">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Código" dataField="codigo" width="50"/>
+				<mx:DataGridColumn headerText="Nome" dataField="nome"/>
+				<mx:DataGridColumn headerText="CPF" dataField="cpfcnpj" width="100"/>
+				<mx:DataGridColumn headerText="Telefone" dataField="tel1" width="80" />
+				<mx:DataGridColumn headerText="Empresa" dataField="empresa" width="150"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:HBox>
+	<mx:ControlBar horizontalAlign="right" verticalAlign="middle">
+		<mx:Label text="Clientes encontrados:"/>
+		<mx:Label id="contCli" text="0"/>
+		<mx:Button label="Incluir Cliente" id="btnIncluirCliente" click="abrirCli()" icon="@Embed('../images/add.png')"/>
+		<mx:Button label="Fechar" icon="@Embed('../images/close.png')" id="btnFechar" click="{PopUpManager.removePopUp(this)}"/>
+	</mx:ControlBar>
+	
+</mx:TitleWindow>
